@@ -1,5 +1,5 @@
 streamlit
 matplotlib
 langchain
-dotenv
+python-dotenv
 pypdf2
