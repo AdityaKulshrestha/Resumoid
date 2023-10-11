@@ -3,3 +3,4 @@ matplotlib
 langchain
 python-dotenv
 pypdf2
+openai
