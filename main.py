@@ -72,7 +72,7 @@ class ExperienceEvaluation(BaseModel):
 
 
 # Defining LLM
-llm = ChatOpenAI()
+llm = ChatOpenAI(model = "gpt-4")
 
 
 def extract_section(resume: str):
