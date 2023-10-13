@@ -4,8 +4,9 @@ import re
 import PyPDF2
 import base64
 import pandas as pd
-from st_aggrid import AgGrid
-from st_aggrid.shared import GridUpdateMode, DataReturnMode, JsCode, walk_gridOptions, ColumnsAutoSizeMode, AgGridTheme, ExcelExportMode
+from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid.shared import GridUpdateMode, DataReturnMode, JsCode, walk_gridOptions, ColumnsAutoSizeMode, AgGridTheme, \
+    ExcelExportMode
 import matplotlib.pyplot as plt
 from langchain.chains import ConversationChain
 from langchain.chat_models import ChatOpenAI
@@ -221,6 +222,36 @@ def suggest_improvements(llm, experience):
     return suggestions
 
 
+def color_cell(value):
+    if value == 'Original Tasks':
+        return {
+            'backgroundColor': 'white',
+            'color': 'red'
+        }
+    else:
+        return {
+            'backgroundColor': 'white',
+            'color': 'green'
+        }
+
+
+color_cell_js = """
+   function(params) {
+       if (params.value == 'Original Tasks') {
+           return {
+               'backgroundColor': 'green',
+               'color': 'white'
+           }
+       } else {
+           return {
+               'backgroundColor': 'white',
+               'color': 'black'
+           }
+       }
+   }
+   """
+
+
 def main():
     st.set_page_config(layout="wide")
     st.title("Welcome to Resumoid 🤖")
@@ -313,11 +344,7 @@ def main():
         work_tasks = ""
         improved = ""
 
-        # | Month | Savings |
-        # | -------- | ------- |
-        # | January | $250 |
-        # | February | $80 |
-        # | March | $420 |
+        st.divider()
 
         for task, suggestion in zip(original_tasks, improvised_tasks):
             work_tasks += f"- :red[{task}]\n"
@@ -331,12 +358,17 @@ def main():
         col5.markdown("### Improved Work Tasks")
         col5.markdown(improved)
 
-        improvisations_json= dict()
-        improvisations_json['Original Tasks'] = original_tasks
-        improvisations_json['Improved Tasks'] = improvised_tasks
-        df = pd.DataFrame(improvisations_json)
-        AgGrid(df,heights = 10, columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS)
-        # st.table(improvisations_json)
+        # AgGrid Table
+        # improvisations_json = dict()
+        # improvisations_json['Original Tasks'] = original_tasks
+        # improvisations_json['Improved Tasks'] = improvised_tasks
+        # df = pd.DataFrame(improvisations_json)
+        #
+        # go = GridOptionsBuilder.from_dataframe(df)
+        # go.configure_column('Original Tasks', cellStyle=JsCode(
+        # color_cell_js))
+        # AgGrid(df, gridOptions=go.build(),allow_unsafe_jscode=True, heights=10,
+        # columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS) st.table(improvisations_json)
 
         if "expert_chat" not in st.session_state:
             st.session_state.expert_chat = False
