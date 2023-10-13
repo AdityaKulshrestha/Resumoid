@@ -150,8 +150,12 @@ def llm_scoring(llm, resume_text, job_description):
     Here are some rules for the scores
     - Score should be integers between 1 to 10. 
     - Provide honest scores based on the resume. 
-    - Give higher scores (8, 9, 10) only in exceptional cases or high experience candidates.
+    - Give higher scores (8, 9, 10) only in rare cases.
+    - Relevant Experience should be high only when the current job is same as applied job role.
+    - Education Experience should be high only when the candidate is from premier college.
+    - Skills and Projects should be evaluated in conjuction with applied role. Give a low score (<6) if there are no relevant projects.
 
+    Take a deep breath. Read the above instructions clearly before giving the scores.
 
     Relevant Experience: {{score_experience}}, Feedback: {{feedback_experience}}
     Education: {{score_education}}, Feedback: {{feedback_education}}
