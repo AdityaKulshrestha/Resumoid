@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from models import *
+from models2 import *
 
 # Defining LLM
 llm = ChatOpenAI(model = "gpt-3.5-turbo")
@@ -191,7 +191,7 @@ def main():
         st.text("Phone Number: " + details.contact_num)
         st.text("Email Address: " + details.email)
 
-        st.text("Education Details: " + education)
+        # st.text("Education Details: " + education)
         st.text("Experience: " + experience)
 
         # section1, section2 = st.columns(2)

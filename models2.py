@@ -56,3 +56,10 @@ class ResumeScores(BaseModel):
     projects_feedback: str
     overall_score: int = Field(..., ge=1, le=10)
     overall_feedback: str
+
+class Suggestion(BaseModel):
+    original_task: List = Field(description="List of original work task mentioned in experience.")
+    reframed: List = Field(description="List of corresponding reframed work task")
+
+class SuggestionList(BaseModel):
+    suggestionList: List[Suggestion]

@@ -3,6 +3,10 @@ from typing import List, Dict
 import re
 import PyPDF2
 import base64
+import pandas as pd
+from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid.shared import GridUpdateMode, DataReturnMode, JsCode, walk_gridOptions, ColumnsAutoSizeMode, AgGridTheme, \
+    ExcelExportMode
 import matplotlib.pyplot as plt
 from langchain.chains import ConversationChain
 from langchain.chat_models import ChatOpenAI
@@ -16,7 +20,8 @@ load_dotenv()
 from models2 import *
 
 # Defining LLM
-llm = ChatOpenAI(model = "gpt-3.5-turbo")
+llm = ChatOpenAI(model="gpt-3.5-turbo")
+
 
 def read_pdf(file):
     """
@@ -31,6 +36,7 @@ def read_pdf(file):
         page = reader.pages[i]
         text += page.extract_text()
     return text
+
 
 # def create_chart_overall(value: int):
 #     """
@@ -62,7 +68,7 @@ def create_chart_overall(value: int):
     """
     fig, ax = plt.subplots(figsize=(3, 3))
 
-    value = value*10
+    value = value * 10
     sizes = [100 - value, value]
 
     # Define colors (blue for the score, silver for the remaining)
@@ -104,6 +110,7 @@ def create_chart(value: int):
     ax.text(0, 0, f'{value}/10', horizontalalignment='center', verticalalignment='center')
 
     return fig
+
 
 def extract_info(resume: str):
     """
@@ -192,6 +199,59 @@ def llm_scoring(llm, resume_text, job_description):
     return resume_scores
 
 
+def suggest_improvements(llm, experience):
+    # Define the prompt
+    prompt = f"""
+    Given the following resume for the job role, please evaluate and provide improvements to the work tasks using the below hints:
+    HINTS: Quantification of work, use of strong action works, overall impact made.
+
+    {experience}
+
+
+    Select any 4 to 10 work tasks and reframe it for better results.
+
+    """
+    # Ask the LLM to score the resume and provide feedback
+    response = llm.predict(prompt)
+
+    parser = OutputFixingParser.from_llm(parser=PydanticOutputParser(pydantic_object=Suggestion), llm=llm)
+    format_instructions = parser.get_format_instructions()
+
+    suggestions = parser.parse(response)
+
+    return suggestions
+
+
+def color_cell(value):
+    if value == 'Original Tasks':
+        return {
+            'backgroundColor': 'white',
+            'color': 'red'
+        }
+    else:
+        return {
+            'backgroundColor': 'white',
+            'color': 'green'
+        }
+
+
+color_cell_js = """
+   function(params) {
+       if (params.value == 'Original Tasks') {
+           return {
+               'backgroundColor': 'green',
+               'color': 'white'
+           }
+       } else {
+           return {
+               'backgroundColor': 'white',
+               'color': 'black'
+           }
+       }
+   }
+   """
+
+
 def main():
     st.set_page_config(layout="wide")
     st.title("Welcome to Resumoid 🤖")
@@ -207,8 +267,8 @@ def main():
     if resume_pdf and job_description and submit:
         resume_text = read_pdf(resume_pdf)
         resume_info = extract_info(resume_text)
-        gpt4_model = ChatOpenAI(model = 'gpt-4')
-        resume_scores = llm_scoring(llm = gpt4_model, resume_text = resume_text, job_description= job_description)
+        gpt4_model = ChatOpenAI(model='gpt-3.5-turbo')
+        resume_scores = llm_scoring(llm=gpt4_model, resume_text=resume_text, job_description=job_description)
 
         st.divider()
 
@@ -243,8 +303,6 @@ def main():
 
         st.text(f"Here is the evaluation of your resume for the {job_description} role.")
 
-        
-
         # st.markdown("**Experience Score:** " + str(resume_scores.experience_score))
         # st.markdown("**Experience Feedback:** " + resume_scores.experience_feedback)
         # st.markdown("**Education Score:** " + str(resume_scores.education_score))
@@ -271,38 +329,59 @@ def main():
         col4.pyplot(create_chart(resume_scores.projects_score))
         col4.markdown(resume_scores.projects_feedback)
 
-
         st.divider()
 
         st.markdown("### Detailed Comments")
         feedback_jobdesc = description_evaluation(resume_text, job_description)
         st.markdown(feedback_jobdesc)
 
+        st.markdown("### Suggestions")
+        output = suggest_improvements(llm, resume_info.experience)
+
+        original_tasks = output.original_task
+        improvised_tasks = output.reframed
+
+        work_tasks = ""
+        improved = ""
+
+        st.divider()
+
+        for task, suggestion in zip(original_tasks, improvised_tasks):
+            work_tasks += f"- :red[{task}]\n"
+            improved += f"""- :green[{suggestion}]\n"""
+
+        col4, col5 = st.columns(2)
+
+        col4.markdown("### Work Tasks")
+        col4.markdown(work_tasks)
+
+        col5.markdown("### Improved Work Tasks")
+        col5.markdown(improved)
+
+        # AgGrid Table
+        # improvisations_json = dict()
+        # improvisations_json['Original Tasks'] = original_tasks
+        # improvisations_json['Improved Tasks'] = improvised_tasks
+        # df = pd.DataFrame(improvisations_json)
+        #
+        # go = GridOptionsBuilder.from_dataframe(df)
+        # go.configure_column('Original Tasks', cellStyle=JsCode(
+        # color_cell_js))
+        # AgGrid(df, gridOptions=go.build(),allow_unsafe_jscode=True, heights=10,
+        # columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS) st.table(improvisations_json)
+
         if "expert_chat" not in st.session_state:
             st.session_state.expert_chat = False
 
         if st.button("Ask an Expert"):
-                st.session_state.expert_chat = True
+            st.session_state.expert_chat = True
 
         if st.session_state.expert_chat:
-            query = st.text_input("Enter your query", placeholder= "enter your query", label_visibility= "collapsed")
+            query = st.text_input("Enter your query", placeholder="enter your query", label_visibility="collapsed")
             if query:
                 # st.write(query)
                 st.write("Expert Chat coming soon!")
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 if __name__ == '__main__':
     main()
-
