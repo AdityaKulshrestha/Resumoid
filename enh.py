@@ -20,7 +20,7 @@ load_dotenv()
 from models2 import *
 
 # Defining LLM
-llm = ChatOpenAI(model="gpt-3.5-turbo")
+llm = ChatOpenAI(model="gpt-3.5-turbo-16k")
 
 
 def read_pdf(file):
@@ -237,7 +237,7 @@ def main():
     if resume_pdf and job_description and submit:
         resume_text = read_pdf(resume_pdf)
         resume_info = extract_info(resume_text)
-        gpt4_model = ChatOpenAI(model='gpt-3.5-turbo')
+        gpt4_model = ChatOpenAI(model='gpt-3.5-turbo-16k')
         resume_scores = llm_scoring(llm=gpt4_model, resume_text=resume_text, job_description=job_description)
 
         st.divider()
