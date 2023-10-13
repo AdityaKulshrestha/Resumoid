@@ -352,10 +352,10 @@ def main():
 
         col4, col5 = st.columns(2)
 
-        col4.markdown("### Work Tasks")
+        col4.markdown("### Your Points")
         col4.markdown(work_tasks)
 
-        col5.markdown("### Improved Work Tasks")
+        col5.markdown("### Suggested Improvement")
         col5.markdown(improved)
 
         # AgGrid Table
