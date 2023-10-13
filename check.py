@@ -3,6 +3,9 @@ from typing import List, Dict
 import re
 import PyPDF2
 import base64
+import pandas as pd
+from st_aggrid import AgGrid
+from st_aggrid.shared import GridUpdateMode, DataReturnMode, JsCode, walk_gridOptions, ColumnsAutoSizeMode, AgGridTheme, ExcelExportMode
 import matplotlib.pyplot as plt
 from langchain.chains import ConversationChain
 from langchain.chat_models import ChatOpenAI
@@ -327,6 +330,13 @@ def main():
 
         col5.markdown("### Improved Work Tasks")
         col5.markdown(improved)
+
+        improvisations_json= dict()
+        improvisations_json['Original Tasks'] = original_tasks
+        improvisations_json['Improved Tasks'] = improvised_tasks
+        df = pd.DataFrame(improvisations_json)
+        AgGrid(df,heights = 10, columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS)
+        # st.table(improvisations_json)
 
         if "expert_chat" not in st.session_state:
             st.session_state.expert_chat = False

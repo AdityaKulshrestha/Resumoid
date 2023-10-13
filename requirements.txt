@@ -4,3 +4,4 @@ langchain
 python-dotenv
 pypdf2
 openai
+streamlit-aggrid
