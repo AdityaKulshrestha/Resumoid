@@ -227,7 +227,7 @@ def main():
 
     # st.markdown("Built by [Build Fast with AI](www.buildfastwithai.com)")
 
-    st.markdown("📄 Upload your resume and job role to get feedback")
+    st.markdown("📄 Upload your resume and job role to get feedback in 2 minutes!")
 
     resume_pdf = st.file_uploader("Upload your resume", type=['pdf'], label_visibility='collapsed')
     job_description = st.text_input("Enter the role for which you are applying")
@@ -331,7 +331,11 @@ def main():
             st.markdown("---------------")
 
 
-        st.write("Chat with Expert - coming soon!")
+        st.divider()
+
+        st.markdown("#####Chat with Expert feature coming soon!")
+
+        st.success("Reach out to me at satvik@buildfastwithai.com")
 
         # col4.markdown("### Your Points")
         # col4.markdown(work_tasks)
