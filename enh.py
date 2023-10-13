@@ -368,7 +368,7 @@ def main():
         #     if query:
         #         # st.write(query)
         #         st.write("Expert Chat coming soon!")
-
+        print(resume_info)
 
 if __name__ == '__main__':
     main()

@@ -19,7 +19,7 @@ class Project(BaseModel):
 
 class Skill(BaseModel):
     skill_name: str = Field(description="Name of the skill")
-    proficiency_level: str = Field(description="Proficiency level of the skill")
+    proficiency_level: Optional[str] = Field(description="Proficiency level of the skill")
 
 class WorkTask(BaseModel):
     task: str = Field(description="Task performed at the job")
