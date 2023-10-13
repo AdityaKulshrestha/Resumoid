@@ -333,9 +333,11 @@ def main():
 
         st.divider()
 
-        st.markdown("#####Chat with Expert feature coming soon!")
+        # st.markdown("##### Chat with Expert feature coming soon!")
 
-        st.success("Reach out to me at satvik@buildfastwithai.com")
+        st.success(""" Chat feature coming soon! \n
+        
+        Reach out to me at satvik@buildfastwithai.com""")
 
         # col4.markdown("### Your Points")
         # col4.markdown(work_tasks)
