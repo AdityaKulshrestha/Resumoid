@@ -147,7 +147,11 @@ def llm_scoring(llm, resume_text, job_description):
 
     Please provide the scores and feedback to the candidate in the following format:
 
-    Note: Score should be integers between 1 to 10. Provide honest scores based on the resume. 
+    Here are some rules for the scores
+    - Score should be integers between 1 to 10. 
+    - Provide honest scores based on the resume. 
+    - Give higher scores (8, 9, 10) only in exceptional cases or high experience candidates.
+
 
     Relevant Experience: {{score_experience}}, Feedback: {{feedback_experience}}
     Education: {{score_education}}, Feedback: {{feedback_education}}
