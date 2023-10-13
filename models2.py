@@ -9,7 +9,7 @@ class PersonalDetails(BaseModel):
 class Education(BaseModel):
     university: str = Field(description="Name of the university")
     degree: str = Field(description="Degree obtained")
-    year_of_passing: Optional[int] = Field(description="Year of passing")
+    year_of_passing: Optional[str] = Field(description="Year of passing")
     field_of_study: Optional[str] = Field(description="Field of study")
     grade: Optional[str] = Field(description="Grade obtained")
 
