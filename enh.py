@@ -1,11 +1,16 @@
 import streamlit as st
 from typing import List, Dict
+import re
 import PyPDF2
 import base64
+import pandas as pd
+from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid.shared import GridUpdateMode, DataReturnMode, JsCode, walk_gridOptions, ColumnsAutoSizeMode, AgGridTheme, \
+    ExcelExportMode
 import matplotlib.pyplot as plt
 from langchain.chains import ConversationChain
 from langchain.chat_models import ChatOpenAI
-from langchain.output_parsers import PydanticOutputParser
+from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
 from pydantic import BaseModel, Field
 from langchain.chains.conversation.memory import ConversationBufferMemory
 from dotenv import load_dotenv
@@ -15,70 +20,7 @@ load_dotenv()
 from models2 import *
 
 # Defining LLM
-llm = ChatOpenAI(model = "gpt-3.5-turbo")
-
-
-def extract_section(resume: str):
-    """
-    Extracts sections from the resume
-    :param resume:
-    :return:
-    """
-    parser = PydanticOutputParser(pydantic_object=Sections)
-    format_instructions = parser.get_format_instructions()
-    section_text = llm.predict(
-        f"Given a resume {resume} \n Extract the section from the resume. \n {format_instructions}")
-    resume_sections = parser.parse(section_text)
-    return resume_sections
-
-
-def analyse_education_section(text: str):
-    """
-    Analyze the resume context
-    :param text: Resume Text
-    :return:
-    """
-    parser = PydanticOutputParser(pydantic_object=EducationList)
-    format_instructions = parser.get_format_instructions()
-    output_education_section = llm.predict(
-        f"Given an education section from a resume: {text}. \n Extract the degrees and colleges from where the user "
-        f"has acquired his/her education. \n {format_instructions}")
-    listofEducation = parser.parse(output_education_section)
-    return listofEducation
-
-
-def analyse_experience_section(experience: str):
-    """
-    Analyses and recommends suggestions for experience section.
-    :param experience:
-    :return:
-    """
-    parser = PydanticOutputParser(pydantic_object=RecommendationList)
-    format_instructions = parser.get_format_instructions()
-    prompt_template = f"""Given is a experience profile of a person. 
-    {experience} Based on the criteria below. First score the resume for each given criteria out of 10 and then suggest 
-    improvements to the resume based on the criteria. 
-    Important Instruction: 
-    1. Be specific about teach suggestion. 
-    2. Suggestion should be according to the given experience. 
-    
-    Criteria 1 - Quantification evidence of impact 
- 
-    Criteria 2 - Less repetition and Unique Action Word.
-    
-    Criteria 3 - Weak Action Verbs
-    
-    Criteria 4 - Avoided Responsibility-oriented Words
- 
-    Criteria 5 - Buzzwords & Clichés
- 
-    \n
-    {format_instructions}
-    """
-
-    evaluated_output = llm.predict(prompt_template)
-    structured_output = parser.parse(evaluated_output)
-    return structured_output
+llm = ChatOpenAI(model="gpt-3.5-turbo-16k")
 
 
 def read_pdf(file):
@@ -94,6 +36,37 @@ def read_pdf(file):
         page = reader.pages[i]
         text += page.extract_text()
     return text
+
+
+def create_chart_overall(value: int):
+    """
+    Return matplotlib.pyplot figure.
+    :param value: Integer value.
+    :return:
+    """
+    fig, ax = plt.subplots(figsize=(3, 3))
+
+    value = value * 10
+    sizes = [100 - value, value]
+
+    # Define colors (blue for the score, silver for the remaining)
+    colors = ['silver', 'blue']
+
+    # Define explode parameters to separate the score section slightly
+    explode = (0, 0.1)
+
+    # Create a pie chart with shadows for a 3D effect
+    ax.pie(sizes, explode=explode, colors=colors, startangle=90, shadow=True)
+
+    # Draw a white circle in the center
+    centre_circle = plt.Circle((0, 0), 0.70, fc='white')
+    ax.add_artist(centre_circle)
+    ax.text(0, 0, f'{value}/100', horizontalalignment='center', verticalalignment='center')
+
+    # Equal aspect ratio ensures that pie is drawn as a circle
+    ax.axis('equal')
+
+    return fig
 
 
 def create_chart(value: int):
@@ -117,6 +90,20 @@ def create_chart(value: int):
     return fig
 
 
+def extract_info(resume: str):
+    """
+    Extracts sections from the resume
+    :param resume:
+    :return:
+    """
+    parser = OutputFixingParser.from_llm(parser=PydanticOutputParser(pydantic_object=Resume), llm=llm)
+    format_instructions = parser.get_format_instructions()
+    resume_text = llm.predict(
+        f"Given a resume {resume} \n Extract all the relevant sections.  \n {format_instructions}")
+    resume_info = parser.parse(resume_text)
+    return resume_info
+
+
 def description_evaluation(resume, job_description):
     prompt_template = f'''You are an Resume Expert. Your job is to give feedback on the resume based on the provided job description.
     Be specific about the points.
@@ -125,7 +112,7 @@ def description_evaluation(resume, job_description):
     
     Job Description: {job_description}
     
-    Please provide the feedback in the following format
+    Please provide the feedback in the following format.
     
     ## Strengths:
     <list strengths here>
@@ -144,145 +131,252 @@ def description_evaluation(resume, job_description):
     output = llm.predict(prompt_template)
     return output
 
+
+def llm_scoring(llm, resume_text, job_description):
+    # Define the prompt
+    prompt = f"""
+    Given the following resume for the job role '{job_description}', please evaluate and provide a score between 1 to 10 (where 1 is the lowest and 10 is the highest), and provide feedback for each category and the overall resume:
+
+    {resume_text}
+
+    Categories:
+    1. Relevant Experience
+    2. Education
+    3. Skills
+    4. Projects
+
+    Please provide the scores and feedback to the candidate in the following format:
+
+    Here are some rules for the scores
+    - Provide honest scores based on the resume. 
+    - Give higher scores (8, 9, 10) only in rare cases.
+    - Relevant Experience should be high only when the current job is same as applied job role.
+    - Education Experience should be high only when the candidate is from premier college.
+    - Skills and Projects should be evaluated in conjuction with applied role. Give a low score (<6) if there are no relevant projects.
+    - Score should be integers between 1 to 10. 
+
+    Take a deep breath. Read the above instructions clearly before giving the scores.
+
+    Relevant Experience: {{score_experience}}, Feedback: {{feedback_experience}}
+    Education: {{score_education}}, Feedback: {{feedback_education}}
+    Skills: {{score_skills}}, Feedback: {{feedback_skills}}
+    Projects: {{score_projects}}, Feedback: {{feedback_projects}}
+    Overall Score: {{score_overall}}, Feedback: {{feedback_overall}}
+    """
+    # Ask the LLM to score the resume and provide feedback
+    response = llm.predict(prompt)
+
+    parser = OutputFixingParser.from_llm(parser=PydanticOutputParser(pydantic_object=ResumeScores), llm=llm)
+    format_instructions = parser.get_format_instructions()
+
+    resume_scores = parser.parse(response)
+
+    return resume_scores
+
+
+def suggest_improvements(llm, experience):
+    # Define the prompt
+    prompt = f"""
+    Given the following resume for the job role, please evaluate and provide improvements to the work tasks using the below hints:
+    HINTS: Quantification of work, use of strong action works, overall impact made.
+
+    {experience}
+
+
+    Select any 4 to 10 work tasks and reframe it for better results.
+
+    """
+    # Ask the LLM to score the resume and provide feedback
+    response = llm.predict(prompt)
+
+    parser = OutputFixingParser.from_llm(parser=PydanticOutputParser(pydantic_object=Suggestion), llm=llm)
+    format_instructions = parser.get_format_instructions()
+
+    suggestions = parser.parse(response)
+
+    return suggestions
+
+
+def color_cell(value):
+    if value == 'Original Tasks':
+        return {
+            'backgroundColor': 'white',
+            'color': 'red'
+        }
+    else:
+        return {
+            'backgroundColor': 'white',
+            'color': 'green'
+        }
+
+
+color_cell_js = """
+   function(params) {
+       if (params.value == 'Original Tasks') {
+           return {
+               'backgroundColor': 'green',
+               'color': 'white'
+           }
+       } else {
+           return {
+               'backgroundColor': 'white',
+               'color': 'black'
+           }
+       }
+   }
+   """
+
+
 def main():
     st.set_page_config(layout="wide")
     st.title("Welcome to Resumoid 🤖")
-    st.header("Your personal AI ATS!")
+    st.subheader("🌝 Your personal AI ATS!")
 
-    st.markdown("📄 Upload your resume and job role to get feedback")
+    st.error(""" 🦺 Built by [Satvik](https://www.linkedin.com/in/satvik-paramkusham/). \n
+    Note: This is an alpha version. You may encounter bugs 🐞""")
+
+    # st.markdown("Built by [Build Fast with AI](www.buildfastwithai.com)")
+
+    st.markdown("📄 Upload your resume and job role to get feedback in 2 minutes!")
 
     resume_pdf = st.file_uploader("Upload your resume", type=['pdf'], label_visibility='collapsed')
     job_description = st.text_input("Enter the role for which you are applying")
 
-    but_col1, but_col2 = st.columns(2)
+    submit = st.button("Submit")
 
-    but_col1.submit = st.button("Submit")
+    if resume_pdf and job_description and submit:
+        resume_text = read_pdf(resume_pdf)
+        resume_info = extract_info(resume_text)
+        gpt4_model = ChatOpenAI(model='gpt-3.5-turbo-16k')
+        resume_scores = llm_scoring(llm=gpt4_model, resume_text=resume_text, job_description=job_description)
 
-    but_col2.chat_with_expert = st.button("Chat with Expert")
-
-    if resume_pdf and job_description and but_col1.submit:
-        resume = read_pdf(resume_pdf)
-        resume_sections = extract_section(resume)
-        details = resume_sections.personal_details
-        # education = resume_sections.education
-        # experience = resume_sections.experience
-
-        education = analyse_education_section(resume)
-        experience = analyse_experience_section(resume)
-
-        experience_evaluation = analyse_experience_section(experience)
-        ## Section 0: Candidate Details
         st.divider()
 
         st.markdown("### Candidate Details")
 
-        # st.markdown(f"""
-        # #### Name - {details.name}
-        # #### Phone Number - {details.contact_num}
-        # #### Email Address - {details.email}
-        # """)
+        # st.text(resume_info)
+        # st.write(resume_info)
+        # print(resume_info)
+        # name, phone, email
 
-        # print(details)
-        # print(type(details))
-        # print(details.name)
-        # print(type(details.name))
+        # name = resume_info.personal_details.name
+        # st.markdown("### Candidate Details")
+        st.markdown("**Name:** " + resume_info.personal_details.name)
+        # st.markdown("**Name:** " + name)
+        st.markdown("**Email:** " + resume_info.personal_details.email)
+        st.markdown("**Contact Number:** " + resume_info.personal_details.contact_num)
+        st.markdown("**University:** " + resume_info.education[0].university)
+        st.markdown("**Current Job Role:** " + resume_info.experience[0].company_name)
+        st.markdown("**Company:** " + resume_info.experience[0].job_role)
 
-        st.text("Name: " + details.name)
-        st.text("Phone Number: " + details.contact_num)
-        st.text("Email Address: " + details.email)
+        st.divider()
 
-        # st.text("Education Details: " + education)
-        st.text("Experience: " + experience)
+        ocol1, ocol2, ocol3 = st.columns(3)
 
-        # section1, section2 = st.columns(2)
-        # section1.markdown(f"""# Education \n{education}""")
-        # section2.markdown(f"""# Experience \n{experience}""")
+        ocol2.markdown("### Relevance Score \n\n\n\n")
+        ocol2.pyplot(create_chart_overall(resume_scores.overall_score))
+        ocol2.markdown(resume_scores.overall_feedback)
 
+        st.divider()
+
+        st.markdown("### Evaluation")
+
+        st.text(f"Here is the evaluation of your resume for the {job_description} role.")
+
+        col1, col2, col3, col4 = st.columns(4)
+        # Column 1
+        col1.markdown("### Experience \n\n\n")
+        col1.pyplot(create_chart(resume_scores.experience_score))
+        col1.markdown(resume_scores.experience_feedback)
+
+        # Column 2
+        col2.markdown("### Education \n\n\n")
+        col2.pyplot(create_chart(resume_scores.education_score))
+        col2.markdown(resume_scores.education_feedback)
+
+        # Column 3
+        col3.markdown("### Skills \n\n\n\n")
+        col3.pyplot(create_chart(resume_scores.skills_score))
+        col3.markdown(resume_scores.skills_feedback)
+
+        # Column 4
+        col4.markdown("### Projects \n\n\n\n")
+        col4.pyplot(create_chart(resume_scores.projects_score))
+        col4.markdown(resume_scores.projects_feedback)
+
+        st.divider()
+
+        st.markdown("### Detailed Comments")
+        # feedback_jobdesc = description_evaluation(resume_text, job_description)
+        # st.markdown(feedback_jobdesc)
+
+        # st.markdown("### Suggestions")
+        output = suggest_improvements(llm, resume_info.experience)
+
+        original_tasks = output.original_task
+        improvised_tasks = output.reframed
+
+        # work_tasks = ""
+        # improved = ""
+
+        # for task, suggestion in zip(original_tasks, improvised_tasks):
+        #     work_tasks += f"- :red[{task}]\n"
+        #     improved += f"""- :green[{suggestion}]\n"""
+
+        col4, col5 = st.columns(2)
+        col4.markdown("#### Your Points")
+        col5.markdown("#### Suggested Improvement")
+
+        # for task, suggestion in zip(original_tasks, improvised_tasks):
+        #     x1, x2 = st.columns(2)
+        #     x1.markdown(task)
+        #     x2.markdown(suggestion)
+        #     # st.divider()
+        #     st.markdown("---------------")
+
+        for task, suggestion in zip(original_tasks, improvised_tasks):
+            x1, x2 = st.columns(2)
+            x1.markdown(f"- :red[{task}]")
+            x2.markdown(f"- :green[{suggestion}]")
+            st.markdown("---------------")
 
 
         st.divider()
 
+        # st.markdown("##### Chat with Expert feature coming soon!")
 
+        st.success(""" Chat feature coming soon! \n
+        
+        Reach out to me at satvik@buildfastwithai.com""")
 
+        # col4.markdown("### Your Points")
+        # col4.markdown(work_tasks)
 
+        # col5.markdown("### Suggested Improvement")
+        # col5.markdown(improved)
 
+        # print(original_tasks)
 
+        # print(improvised_tasks)
 
+        # print(improved)
+        # print(type(improved))
+        # print(work_tasks)
+        # print(type(work_tasks))
 
+        # if "expert_chat" not in st.session_state:
+        #     st.session_state.expert_chat = False
 
+        # if st.button("Ask an Expert"):
+        #     st.session_state.expert_chat = True
+        #     st.write("Expert Chat coming soon!")
 
-# def main():
-#     st.set_page_config(layout="wide")
-#     st.title("Welcome to Resumoid 🤖")
-#     st.header("Your personal AI ATS!")
-
-#     st.markdown("📄 Upload your resume and job role to get feedback")
-
-#     resume_pdf = st.file_uploader("Upload your resume", type=['pdf'], label_visibility='collapsed')
-#     job_description = st.text_input("Enter the role for which you are applying")
-
-#     but_col1, but_col2 = st.columns(2)
-
-#     but_col1.submit = st.button("Submit")
-
-#     but_col2.chat_with_expert = st.button("Chat with Expert")
-
-#     if resume_pdf and job_description and but_col1.submit:
-#         # displayPDF(resume_pdf)
-#         st.divider()
-#         resume = read_pdf(resume_pdf)
-#         resume_sections = extract_section(resume)
-#         details = resume_sections.personal_details
-#         education = resume_sections.education
-#         experience = resume_sections.experience
-#         experience_evaluation = analyse_experience_section(experience)
-#         st.markdown(f"""
-#         ### Name - {details.name}
-#         ### Phone Number - {details.contact_num}
-#         ### Email Address - {details.email}
-#         """)
-#         section1, section2 = st.columns(2)
-#         section1.markdown(f"""# Education \n{education}""")
-#         section2.markdown(f"""# Experience \n{experience}""")
-
-#         st.divider()
-#         st.markdown("## Detailed Analysis")
-
-#         col1, col2, col3, col4, col5 = st.columns(5)
-#         # Column 1
-#         col1.markdown("### Quantification evidence of impact\n\n\n")
-#         col1.pyplot(create_chart(experience_evaluation.recommendationsList[0].score))
-#         col1.markdown(experience_evaluation.recommendationsList[0].suggestion)
-
-#         # Column 2
-#         col2.markdown("### Less repetition and Unique Action Word.\n\n\n")
-#         col2.pyplot(create_chart(experience_evaluation.recommendationsList[1].score))
-#         col2.markdown(experience_evaluation.recommendationsList[1].suggestion)
-
-#         # Column 3
-#         col3.markdown("### Weak Action Verbs\n\n\n\n")
-#         col3.pyplot(create_chart(experience_evaluation.recommendationsList[2].score))
-#         col3.markdown(experience_evaluation.recommendationsList[2].suggestion)
-
-#         # Column 4
-#         col4.markdown("### Avoided Responsibility-oriented Words\n\n\n\n")
-#         col4.pyplot(create_chart(experience_evaluation.recommendationsList[3].score))
-#         col4.markdown(experience_evaluation.recommendationsList[3].suggestion)
-
-#         # Column 5
-#         col5.markdown("### Buzzwords & Clichés\n\n\n\n\n")
-#         col5.pyplot(create_chart(experience_evaluation.recommendationsList[4].score))
-#         col5.markdown(experience_evaluation.recommendationsList[4].suggestion)
-
-#         st.divider()
-#         st.markdown("## Feedback on the resume based on job description!")
-#         feedback_jobdesc = description_evaluation(resume, job_description)
-#         st.markdown(feedback_jobdesc)
-
-#     with st.sidebar:
-#         if resume_pdf and job_description:
-#             st.button("Chat with an expert!")
-
+        # if st.session_state.expert_chat:
+        #     query = st.text_input("Enter your query", placeholder="enter your query", label_visibility="collapsed")
+        #     if query:
+        #         # st.write(query)
+        #         st.write("Expert Chat coming soon!")
+        print(resume_info)
 
 if __name__ == '__main__':
     main()
