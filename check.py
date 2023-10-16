@@ -199,16 +199,20 @@ def llm_scoring(llm, resume_text, job_description):
     return resume_scores
 
 
-def suggest_improvements(llm, experience):
+def suggest_improvements(llm, experience, job_description):
     # Define the prompt
-    prompt = f"""
-    Given the following resume for the job role, please evaluate and provide improvements to the work tasks using the below hints:
-    HINTS: Quantification of work, use of strong action works, overall impact made.
-
+    prompt = f""" Given the following resume for the job role, please evaluate and re write the work tasks
+    using the below hints: 
+    HINTS: Usage of quantification of work, usage of strong action works, overall impact made through the work. 
     {experience}
 
-
-    Select any 4 to 10 work tasks and reframe it for better results.
+    INSTRUCTION:
+    - Select any 4 to 10 work tasks and reframe it for better results.
+    - Re write the work tasks so that the chances for the candidate for getting hired becomes more.
+    - Consider the following job description and frame the work tasks according to it.
+    
+    JOB DESCRIPTION:
+    {job_description}
 
     """
     # Ask the LLM to score the resume and provide feedback
@@ -336,7 +340,7 @@ def main():
         st.markdown(feedback_jobdesc)
 
         st.markdown("### Suggestions")
-        output = suggest_improvements(llm, resume_info.experience)
+        output = suggest_improvements(llm, resume_info.experience, job_description)
 
         original_tasks = output.original_task
         improvised_tasks = output.reframed

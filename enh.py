@@ -15,7 +15,7 @@ load_dotenv()
 from models2 import *
 
 # Defining LLM
-llm = ChatOpenAI(model = "gpt-3.5-turbo")
+llm = ChatOpenAI(model="gpt-3.5-turbo")
 
 
 def extract_section(resume: str):
@@ -144,6 +144,7 @@ def description_evaluation(resume, job_description):
     output = llm.predict(prompt_template)
     return output
 
+
 def main():
     st.set_page_config(layout="wide")
     st.title("Welcome to Resumoid 🤖")
@@ -198,17 +199,7 @@ def main():
         # section1.markdown(f"""# Education \n{education}""")
         # section2.markdown(f"""# Experience \n{experience}""")
 
-
-
         st.divider()
-
-
-
-
-
-
-
-
 
 
 # def main():
