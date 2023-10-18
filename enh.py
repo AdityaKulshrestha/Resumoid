@@ -107,24 +107,24 @@ def extract_info(resume: str):
 def description_evaluation(resume, job_description):
     prompt_template = f'''You are an Resume Expert. Your job is to give feedback on the resume based on the provided job description.
     Be specific about the points.
-    
+
     Resume: {resume}
-    
+
     Job Description: {job_description}
-    
+
     Please provide the feedback in the following format.
-    
+
     ## Strengths:
     <list strengths here>
-    
+
     ## Weaknesses:
     <list weaknesses here>
-    
+
     ## Recommendations to improve CV:
     <list recommendations here>
-    
-    
-    
+
+
+
     ONLY QUOTE THE INFORMATION PROVIDED IN THE RESUME. DO NOT MAKE UP INFORMATION WHICH IS NOT EXPLICITLY PROVIDED IN RESUME.
     RETURN THE RESPONSE IN MARKDOWN FORMAT IN BULLET POINTS.
     '''
@@ -340,13 +340,12 @@ def main():
             x2.markdown(f"- :green[{suggestion}]")
             st.markdown("---------------")
 
-
         st.divider()
 
         # st.markdown("##### Chat with Expert feature coming soon!")
 
         st.success(""" Chat feature coming soon! \n
-        
+
         Reach out to me at satvik@buildfastwithai.com""")
 
         # col4.markdown("### Your Points")
@@ -377,6 +376,7 @@ def main():
         #         # st.write(query)
         #         st.write("Expert Chat coming soon!")
         print(resume_info)
+
 
 if __name__ == '__main__':
     main()
