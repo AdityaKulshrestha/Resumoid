@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles/styles.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header {
+            text-align: center;
+            padding: 20px 0;
+        }
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .form-group {
+            text-align: center;
+            margin: 10px 0;
+        }
+        footer {
+            text-align: center;
+            padding: 10px;
+        }
+        .btn-container {
+            text-align: center;
+        }
+        .btn {
+            background-color: #007BFF;
+            color: #FFF;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+    <title>Resumoid</title>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="images/logo.png" alt="Resume Evaluator Logo">
+            <h1>Resumoid</h1>
+        </header>
+        <main>
+            <h2>Upload Your Resume and Job Description</h2>
+            <form action="/analysis" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="resume">Upload Your Resume (PDF):</label>
+                    <input type="file" id="resume" name="resume" accept=".pdf" required>
+                </div>
+                <div class="form-group">
+                    <label for="job_description">Job Description:</label>
+                    <input type="text" id="job_description" name="job_description" required>
+                </div>
+                <div class="btn-container">
+                    <button type="submit" class="btn">Evaluate</button>
+                </div>
+            </form>
+        </main>
+        <footer>
+            <p>&copy; 2023 Resume Evaluator</p>
+        </footer>
+    </div>
+</body>
+</html>

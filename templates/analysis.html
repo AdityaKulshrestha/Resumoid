@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../styles/styles.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+        }
+        header {
+            text-align: center;
+            padding: 20px;
+        }
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .analysis-results {
+            text-align: center;
+        }
+        footer {
+            text-align: center;
+            padding: 10px;
+        }
+
+    </style>
+    <title>Resume Analysis</title>
+</head>
+<body>
+<header>
+    <h1>Resume Analysis</h1>
+</header>
+<main>
+    <section class="analysis-results">
+        <h2>Analysis Results</h2>
+        <div>
+            <p>Resume: {{ resume_info }}</p>
+        </div>
+        <div>
+            <p>Resume Scores: {{ resume_scores }}</p>
+        </div>
+        <div id="results">
+            <!-- Analysis results will be displayed here -->
+            <h2>"Scores"</h2>
+            <div class="image-grid">
+                <div class="image-column">
+                    <img src="data:image/png;base64, {{ base64_image_1 }}" alt="Education">
+                </div>
+                <div class="image-column">
+                    <img src="data:image/png;base64, {{ base64_image_2 }}" alt="Experience">
+                </div>
+                <!-- Add more image columns as needed -->
+            </div>
+
+
+        </div>
+        <div class="container">
+            <div class="original-list">
+                <h1>Original List</h1>
+                <ol>
+                    {% for item in original_list %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ol>
+            </div>
+
+            <div class="suggestion-list">
+                <h1>Suggestion List</h1>
+                <ol>
+                    {% for item in suggestion_list %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </section>
+</main>
+<footer>
+    <p>&copy; 2023 Resume Evaluator</p>
+</footer>
+</body>
+</html>
