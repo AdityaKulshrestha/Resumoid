@@ -1,3 +1,4 @@
+import os
 import uvicorn
 import matplotlib
 from fastapi import FastAPI, Request, File, Form, UploadFile
@@ -30,6 +31,7 @@ async def generate_analysis(
         job_description: str = Form(...),
 ):
     # resume_text = read_pdf(resume.file)
+    os.makedirs('tmp', exist_ok=True)
     resume_text = read_pdf_unstructured(resume)
     print(resume_text)
     resume_info = extract_info(resume_text)
