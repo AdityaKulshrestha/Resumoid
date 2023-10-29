@@ -1,2 +1,4 @@
 .env
-templates
+resumes
+.idea
+__pycache__
