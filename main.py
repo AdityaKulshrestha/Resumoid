@@ -1,6 +1,7 @@
 import os
 import uvicorn
 import matplotlib
+from schema import ResumeScores
 from fastapi import FastAPI, Request, File, Form, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,7 +14,6 @@ matplotlib.use('TKAgg')
 
 app = FastAPI()
 
-# app.mount("/templates", StaticFiles(directory="templates"), name='templates')
 app.mount("/styles", StaticFiles(directory="styles"), name='styles')
 
 templates = Jinja2Templates(directory="templates")
@@ -30,6 +30,13 @@ async def generate_analysis(
         resume: UploadFile = File(...),
         job_description: str = Form(...),
 ):
+    """
+    Front end based API for resume analysis
+    :param request:
+    :param resume:
+    :param job_description:
+    :return: HTML page with generated analysis
+    """
     # resume_text = read_pdf(resume.file)
     os.makedirs('tmp', exist_ok=True)
     resume_text = read_pdf_unstructured(resume)
@@ -50,6 +57,26 @@ async def generate_analysis(
                                        'base64_image_2': experience_score_chart,
                                        'original_list': suggestion.original_task,
                                        'suggestion_list': suggestion.reframed})
+
+
+@app.get('/analyse-resume', response_model=ResumeScores)
+async def analyse_resume(personal_details: str, professional_details: str, education_details: str,
+                         preferences_details: str, job_description: str):
+    """
+    Analyzes and generates report on the resume.
+    :param personal_details: Personal Details of the applicant
+    :param professional_details: Professional Details of the applicant
+    :param education_details: Educational Details of the applicant
+    :param preferences_details: Addidtional preferences
+    :param job_description: Description of the role
+    :return: Generated Analysis in JSON format
+    """
+
+    resume_text = personal_details + '\n' + professional_details + '\n' + education_details + '\n' + preferences_details
+
+    llm_scores = llm_scoring(resume_text, job_description)
+    suggestions = suggest_improvements(professional_details)
+    return llm_scores
 
 
 if __name__ == '__main__':

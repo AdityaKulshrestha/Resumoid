@@ -193,7 +193,7 @@ def rate_skills(resume, job_description):
     return output
 
 
-def llm_scoring(resume_text, job_description, llm = llm):
+def llm_scoring(resume_text, job_description, llm=llm):
     # Define the prompt
     prompt = f"""
     You are an HR of a company who is hiring for {job_description} role in your company. For the role you have to 
@@ -208,11 +208,6 @@ def llm_scoring(resume_text, job_description, llm = llm):
     HINTS - Experience relevant to the hiring role, Total experience of the industry and position held, kind of work done in previous positions.
     2. Education
     HINTS - Does the hiring role require higher studies or advance degrees, Top college, professional degrees.
-    3. Skills
-    HINTS - Compare the skills required for {job_description} with the skills mentioned in the resume.
-    4. Projects
-    HINTS - Alignment and relevancy of projects with {job_description}. Low score for bad relation and high for high relevancy.
-
 
 
     Here are some rules for the scores
@@ -224,8 +219,6 @@ def llm_scoring(resume_text, job_description, llm = llm):
 
     Relevant Experience: {{score_experience}}, Feedback: {{feedback_experience}}
     Education: {{score_education}}, Feedback: {{feedback_education}}
-    Skills: {{score_skills}}, Feedback: {{feedback_skills}}
-    Projects: {{score_projects}}, Feedback: {{feedback_projects}}
     Overall Score: {{score_overall}}, Feedback: {{feedback_overall}}
     """
     # Ask the LLM to score the resume and provide feedback
@@ -235,7 +228,6 @@ def llm_scoring(resume_text, job_description, llm = llm):
     format_instructions = parser.get_format_instructions()
 
     resume_scores = parser.parse(response)
-
     return resume_scores
 
 
@@ -263,4 +255,3 @@ def suggest_improvements(experience, llm=llm):
     suggestions = parser.parse(response)
 
     return suggestions
-

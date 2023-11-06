@@ -62,10 +62,6 @@ class ResumeScores(BaseModel):
     experience_feedback: str
     education_score: int = Field(..., ge=1, le=10)
     education_feedback: str
-    skills_score: int = Field(..., ge=1, le=10)
-    skills_feedback: str
-    projects_score: int = Field(..., ge=1, le=10)
-    projects_feedback: str
     overall_score: int = Field(..., ge=1, le=10)
     overall_feedback: str
 
