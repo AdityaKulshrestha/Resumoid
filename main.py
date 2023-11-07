@@ -1,7 +1,7 @@
 import os
 import uvicorn
 import matplotlib
-from schema import ResumeScores
+from schema import ResumeScores, Resume_API
 from fastapi import FastAPI, Request, File, Form, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -59,7 +59,7 @@ async def generate_analysis(
                                        'suggestion_list': suggestion.reframed})
 
 
-@app.get('/analyse-resume', response_model=ResumeScores)
+@app.get('/analyse-resume', response_model=Resume_API)
 async def analyse_resume(personal_details: str, professional_details: str, education_details: str,
                          preferences_details: str, job_description: str):
     """
@@ -76,7 +76,8 @@ async def analyse_resume(personal_details: str, professional_details: str, educa
 
     llm_scores = llm_scoring(resume_text, job_description)
     suggestions = suggest_improvements(professional_details)
-    return llm_scores
+    final_eval = Resume_API(resume_eval = llm_scores, suggestions=suggestions)
+    return final_eval
 
 
 if __name__ == '__main__':

@@ -73,3 +73,8 @@ class Suggestion(BaseModel):
 
 class SuggestionList(BaseModel):
     suggestionList: List[Suggestion]
+
+
+class Resume_API(BaseModel):
+    resume_eval: ResumeScores
+    suggestions: SuggestionList

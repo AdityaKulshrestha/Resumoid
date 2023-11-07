@@ -243,14 +243,13 @@ def suggest_improvements(experience, llm=llm):
 
 
 
-    Select any 4 to 10 work mentioned in the experience and reframe it for better accepting chances of the resume.
+    Select any 4 to 10 work mentioned in the experience and reframe it for better accepting chances of the resume. Return the works mentioned and its reframed sentences.
 
     """
     # Ask the LLM to score the resume and provide feedback
     response = llm.predict(prompt)
 
-    parser = OutputFixingParser.from_llm(parser=PydanticOutputParser(pydantic_object=Suggestion), llm=llm)
-    format_instructions = parser.get_format_instructions()
+    parser = OutputFixingParser.from_llm(parser=PydanticOutputParser(pydantic_object=SuggestionList), llm=llm)
 
     suggestions = parser.parse(response)
 
